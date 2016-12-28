@@ -7,10 +7,25 @@ module Skeletons where
 import Data.AffineSpace
 import Data.VectorSpace
 import Math.MFSolve
+import Data.Map (Map)
 
 type V3 a = (a, a, a)
 
 mkV3 a b c = (a, b, c)
+
+data AbsRel a = Abs a | Rel a
+
+type Movement n a = Map Double [(n, a)]
+type Assignment n a = n -> a
+
+solve :: Skeleton' n a
+      -> Assignment n a
+      -> Movement n a
+      -> Double
+      -> Assignment n a
+-- sort the movement by timestamp, at each one, solve the constraint
+-- system and then lerp between them for the output
+solve = undefined
 
 data Skeleton' n a = Joint
   { _jointName :: n
