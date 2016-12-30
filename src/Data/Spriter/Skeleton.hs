@@ -37,14 +37,17 @@ animate :: Animation
         -> Int  -- ^ Frame.
         -> Maybe [ResultBone]
 animate anim frame =
-  case frame + 1 == anim ^. animLength of
-    True  -> Nothing
-    False -> Just result
+  case frame <= anim ^. animLength of
+    True  -> Just result
+    False -> Nothing
   where
     keyframes = anim ^. animMainline.mainlineKey
+    allKeyframes = (head keyframes : keyframes)
+                ++ [head keyframes & mainlineKeyTime .~ _animLength anim]
+
     (kf1, kf2) = head . filter betweenKeyframes
-                      . zip (head keyframes : keyframes)
-                      $ keyframes
+                      . zip allKeyframes
+                      $ tail allKeyframes
     tlKeys = zip (getTimelineKey <$> _mainlineKeyBoneRef kf1)
                  (getTimelineKey <$> _mainlineKeyBoneRef kf2)
 

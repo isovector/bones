@@ -65,10 +65,15 @@ data MainlineKey = MainlineKey
   , _mainlineKeyTime :: Int
   } deriving (Eq, Show, Read, Generic)
 
+instance FromJSON MainlineKey where
+  parseJSON = withObject "MainlineKey" $ \obj ->
+    MainlineKey <$> obj .: "bone_ref"
+                <*> obj .: "id"
+                <*> obj .: "object_ref"
+                <*> (maybe 0 id <$> obj .:? "time")
+
 instance ToJSON MainlineKey where
    toJSON = genericToJSON $ aesonDrop 12 snakeCase
-instance FromJSON MainlineKey where
-   parseJSON = genericParseJSON $ aesonDrop 12 snakeCase
 
 data BoneRef = BoneRef
   { _boneRefId :: Int
@@ -125,10 +130,14 @@ data TimelineBone = TimelineBone
   , _timelineBoneY :: Scientific
   } deriving (Eq, Show, Read, Generic)
 
+instance FromJSON TimelineBone where
+  parseJSON = withObject "TimelineBone" $ \obj ->
+    TimelineBone <$> (maybe 0 id <$> obj .:? "angle")
+                 <*> (maybe 0 id <$> obj .:? "x")
+                 <*> (maybe 0 id <$> obj .:? "y")
+
 instance ToJSON TimelineBone where
    toJSON = genericToJSON $ aesonDrop 13 snakeCase
-instance FromJSON TimelineBone where
-   parseJSON = genericParseJSON $ aesonDrop 13 snakeCase
 
 data TimelineObject = TimelineObject
   { _timelineObjAngle :: Scientific
