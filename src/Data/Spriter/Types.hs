@@ -86,7 +86,7 @@ instance FromJSON BoneRef where
 data ObjectRef = ObjectRef
   { _objectRefId :: Int
   , _objectRefKey :: Int
-  , _objectRefParent :: Int
+  , _objectRefParent :: Maybe Int
   , _objectRefTimeline :: String
   , _objectRefZIndex :: String
   } deriving (Eq, Show, Read, Generic)
