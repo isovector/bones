@@ -68,14 +68,30 @@ animate anim frame = result
     lerpBones (tlk1, parent) (tlk2, _)
       | Just b1 <- _timelineKeyBone tlk1
       , Just b2 <- _timelineKeyBone tlk2
-      = let lerping f = lerp progress (toRealFloat $ f b1)
-                                      (toRealFloat $ f b2)
-         in ResultBone (degToRad $ lerping _timelineBoneAngle)
-                       -- TODO(sandy): ^ use spin to figure this out
+      = let spin = maybe 1 fromIntegral $ _timelineKeySpin tlk1
+            overEach f g = f (toRealFloat $ g b1)
+                             (toRealFloat $ g b2)
+            lerping = overEach (lerp progress)
+         in ResultBone ( degToRad
+                       $ overEach (lerpAngle spin)
+                                  _timelineBoneAngle)
                        (lerping _timelineBoneX)
                        (lerping _timelineBoneY)
                        parent
     lerpBones _ _ = error "bad lerpbones"
+
+    lerpAngle spin r1 r2 =
+      lerp progress r1 (r1 + normalizeDeg r1 r2 * spin)
+
+    normalizeDeg r1 r2 =
+      let deg = fmod 360 (max r1 r2 - min r1 r2)
+       in case deg > 180 of
+            True  -> 360 - deg
+            False -> deg
+
+    fmod r a | a < 0     = fmod r $ a + r
+             | a >= r    = fmod r $ a - r
+             | otherwise = a
 
     getTimelineKey :: BoneRef -> (TimelineKey, Maybe Int)
     getTimelineKey br =
