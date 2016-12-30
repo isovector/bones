@@ -1,0 +1,196 @@
+{
+  "entity": [
+    {
+      "animation": [
+        {
+          "id": 0,
+          "interval": 100,
+          "length": 300,
+          "mainline": {
+            "key": [
+              {
+                "bone_ref": [
+                  {
+                    "id": 0,
+                    "key": 2,
+                    "timeline": 0
+                  },
+                  {
+                    "id": 1,
+                    "key": 0,
+                    "parent": 0,
+                    "timeline": 1
+                  }
+                ],
+                "id": 0,
+                "object_ref": [],
+                "time": 1
+              },
+              {
+                "bone_ref": [
+                  {
+                    "id": 0,
+                    "key": 0,
+                    "timeline": 0
+                  },
+                  {
+                    "id": 1,
+                    "key": 1,
+                    "parent": 0,
+                    "timeline": 1
+                  }
+                ],
+                "id": 1,
+                "object_ref": [],
+                "time": 100
+              },
+              {
+                "bone_ref": [
+                  {
+                    "id": 0,
+                    "key": 1,
+                    "timeline": 0
+                  },
+                  {
+                    "id": 1,
+                    "key": 2,
+                    "parent": 0,
+                    "timeline": 1
+                  }
+                ],
+                "id": 2,
+                "object_ref": [],
+                "time": 202
+              },
+              {
+                "bone_ref": [
+                  {
+                    "id": 0,
+                    "key": 2,
+                    "timeline": 0
+                  },
+                  {
+                    "id": 1,
+                    "key": 3,
+                    "parent": 0,
+                    "timeline": 1
+                  }
+                ],
+                "id": 3,
+                "object_ref": [],
+                "time": 299
+              }
+            ]
+          },
+          "name": "NewAnimation",
+          "timeline": [
+            {
+              "id": 0,
+              "key": [
+                {
+                  "bone": {
+                    "angle": 6.5747401999504405,
+                    "x": -38.06877490935441,
+                    "y": 19.340410179492288
+                  },
+                  "id": 0,
+                  "time": 100
+                },
+                {
+                  "bone": {
+                    "angle": 154.69198554059835,
+                    "x": -101.0851099532586,
+                    "y": 7.1052979686493245
+                  },
+                  "id": 1,
+                  "spin": -1,
+                  "time": 202
+                },
+                {
+                  "bone": {
+                    "angle": 56.6060294041813,
+                    "x": 24.329752928236978,
+                    "y": 31.455570309836787
+                  },
+                  "id": 2,
+                  "spin": -1,
+                  "time": 299
+                }
+              ],
+              "name": "bone_001",
+              "obj": 0,
+              "object_type": "bone"
+            },
+            {
+              "id": 1,
+              "key": [
+                {
+                  "bone": {
+                    "angle": 1.479778578120829,
+                    "x": 44.789861764754136,
+                    "y": -7.189912999893162
+                  },
+                  "id": 0,
+                  "time": 1
+                },
+                {
+                  "bone": {
+                    "angle": 119.49943103125119,
+                    "x": 45.39806982865674,
+                    "y": -8.129671476310284
+                  },
+                  "id": 1,
+                  "spin": -1,
+                  "time": 100
+                },
+                {
+                  "bone": {
+                    "angle": 1.6974436752262818,
+                    "x": 46.024708439950345,
+                    "y": -9.097907482315781
+                  },
+                  "id": 2,
+                  "spin": -1,
+                  "time": 202
+                },
+                {
+                  "bone": {
+                    "angle": 1.4787010281351058,
+                    "x": 46.02470843995034,
+                    "y": -9.09790748231578
+                  },
+                  "id": 3,
+                  "time": 299
+                }
+              ],
+              "name": "bone_002",
+              "obj": 1,
+              "object_type": "bone"
+            }
+          ]
+        }
+      ],
+      "character_map": [],
+      "id": 0,
+      "name": "entity_000",
+      "obj_info": [
+        {
+          "h": 10,
+          "name": "bone_001",
+          "type": "bone",
+          "w": 47.27344083948389
+        },
+        {
+          "h": 10,
+          "name": "bone_002",
+          "type": "bone",
+          "w": 303.40731031420427
+        }
+      ]
+    }
+  ],
+  "folder": [],
+  "generator": "BrashMonkey Spriter",
+  "generator_version": "r10",
+  "scon_version": "1.0"
+}

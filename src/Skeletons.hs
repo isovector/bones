@@ -1,9 +1,11 @@
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 
 module Skeletons where
 
+import Control.Lens.TH
 import Data.String.Conv (toS)
 import Data.Aeson
 import Control.Monad (guard)
@@ -109,7 +111,7 @@ data TimelineKey = TimelineKey
   , _timelineKeyObject :: Maybe TimelineObject
   , _timelineKeyBone :: Maybe TimelineBone
   , _timelineKeySpin :: Maybe Int
-  , _timelineKeyTime :: Int
+  , _timelineKeyTime :: Maybe Int
   } deriving (Eq, Show, Read, Generic)
 
 instance ToJSON TimelineKey where
@@ -189,7 +191,22 @@ instance FromJSON File where
 
 test :: IO ()
 test = do
-  file <- readFile "/home/bootstrap/spriter-test/hmm.scon"
+  file <- readFile "/home/bootstrap/Projects/bones/basic-anim.scon"
   let Just x = decode $ toS file
   print $ (fromJSON x :: Result Schema)
+
+makeLenses ''Animation
+makeLenses ''BoneRef
+makeLenses ''Entity
+makeLenses ''File
+makeLenses ''Folder
+makeLenses ''Mainline
+makeLenses ''MainlineKey
+makeLenses ''ObjInfo
+makeLenses ''ObjectRef
+makeLenses ''Schema
+makeLenses ''Timeline
+makeLenses ''TimelineBone
+makeLenses ''TimelineKey
+makeLenses ''TimelineObject
 
