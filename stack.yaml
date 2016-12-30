@@ -3,8 +3,7 @@ resolver: lts-7.1
 packages:
 - '.'
 
-extra-deps:
-- 'mfsolve-0.3.2.0'
+extra-deps: []
 
 flags: {}
 

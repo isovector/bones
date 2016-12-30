@@ -15,7 +15,7 @@ import Debug.Trace (trace)
 data ResultBone = ResultBone
   { _rbAngle :: Double
   , _rbX :: Double
-  , _rby :: Double
+  , _rbY :: Double
   , _rbParent :: Maybe Int
   } deriving (Eq, Show, Read)
 makeLenses ''ResultBone

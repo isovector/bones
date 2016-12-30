@@ -6,11 +6,11 @@
 module Data.Spriter.Types where
 
 import Control.Lens.TH
-import Data.Aeson
 import Control.Monad (guard)
+import Data.Aeson
 import Data.Aeson.Casing
-import GHC.Generics
 import Data.Scientific
+import GHC.Generics
 
 data Schema = Schema
   { _schemaEntity :: [Entity]
