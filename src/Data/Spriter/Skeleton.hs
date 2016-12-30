@@ -5,13 +5,11 @@
 
 module Data.Spriter.Skeleton where
 
-import Debug.Trace (trace)
-import Data.String.Conv (toS)
-import Data.Aeson (Result (..), decode, fromJSON)
 import Control.Lens
 import Data.Monoid ((<>))
 import Data.Scientific (toRealFloat)
 import Data.Spriter.Types
+import Debug.Trace (trace)
 
 
 data ResultBone = ResultBone
@@ -37,13 +35,16 @@ showTrace = trace =<< show
 
 animate :: Animation
         -> Int  -- ^ Frame.
-        -> [ResultBone]
-animate anim frame = result
+        -> Maybe [ResultBone]
+animate anim frame =
+  case frame + 1 == anim ^. animLength of
+    True  -> Nothing
+    False -> Just result
   where
     keyframes = anim ^. animMainline.mainlineKey
     (kf1, kf2) = head . filter betweenKeyframes
-                      . zip keyframes
-                      $ tail keyframes
+                      . zip (head keyframes : keyframes)
+                      $ keyframes
     tlKeys = zip (getTimelineKey <$> _mainlineKeyBoneRef kf1)
                  (getTimelineKey <$> _mainlineKeyBoneRef kf2)
 
@@ -112,14 +113,4 @@ lerp p l u = l * (1 - p) + u * p
 
 degToRad :: (Floating a) => a -> a
 degToRad a = a / 180 * pi
-
-
-
-test :: IO ()
-test = do
-  file <- readFile "/home/bootstrap/Projects/bones/basic-anim.scon"
-  let Just x = decode $ toS file
-      Success y = fromJSON x
-      animation = y ^. schemaEntity._head.entityAnimation
-  print $ animate (head animation) 202
 
