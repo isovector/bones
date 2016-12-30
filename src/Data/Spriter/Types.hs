@@ -25,7 +25,7 @@ instance FromJSON Schema where
 
 data Entity = Entity
   { _entityAnimation :: [Animation]
-  , _entityCharacterMap :: [()]
+  -- , _entityCharacterMap :: [()]
   , _entityId :: Int
   , _entityName :: String
   , _entityObjInfo :: [ObjInfo]
@@ -41,7 +41,7 @@ data Animation = Animation
   , _animInterval :: Int
   , _animLength :: Int  -- ^ Number of frames.
   , _animName :: String
-  -- , _animMainline :: Mainline
+  , _animMainline :: Mainline
   , _animTimeline :: [Timeline]
   } deriving (Eq, Show, Read, Generic)
 
