@@ -6,7 +6,6 @@
 module Data.Spriter.Types where
 
 import Control.Lens.TH
-import Data.String.Conv (toS)
 import Data.Aeson
 import Control.Monad (guard)
 import Data.Aeson.Casing
@@ -204,9 +203,3 @@ makeLenses ''TimelineBone
 makeLenses ''TimelineKey
 makeLenses ''TimelineObject
 
-
-test :: IO ()
-test = do
-  file <- readFile "/home/bootstrap/Projects/bones/basic-anim.scon"
-  let Just x = decode $ toS file
-  print $ (fromJSON x :: Result Schema)
