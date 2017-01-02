@@ -6,10 +6,10 @@
 module Data.Spriter.Skeleton where
 
 import Control.Lens
+import Data.Maybe (isJust)
 import Data.Monoid ((<>))
 import Data.Scientific (toRealFloat)
 import Data.Spriter.Types
-import Debug.Trace (trace)
 
 
 data ResultBone = ResultBone
@@ -17,25 +17,25 @@ data ResultBone = ResultBone
   , _rbX :: Double
   , _rbY :: Double
   , _rbParent :: Maybe Int
+  , _rbObj :: Maybe BoneObj
   } deriving (Eq, Show, Read)
 makeLenses ''ResultBone
 
+isBone :: ResultBone -> Bool
+isBone = not . isJust . _rbObj
+
 instance Monoid ResultBone where
-  mempty  = ResultBone 0 0 0 Nothing
-  mappend (ResultBone a  x  y  _) (ResultBone a' x' y' p) =
+  mempty  = ResultBone 0 0 0 Nothing Nothing
+  mappend (ResultBone a x y _ _) (ResultBone a' x' y' p o) =
     let s = sin a
         c = cos a
         x'' = (x' * c) - (y' * s)
         y'' = (x' * s) + (y' * c)
-     in ResultBone (a + a') (x + x'') (y + y'') p
-
-
-showTrace :: Show a => a -> a
-showTrace = trace =<< show
+     in ResultBone (a + a') (x + x'') (y + y'') p o
 
 animate :: Animation
         -> Int  -- ^ Frame.
-        -> Maybe [ResultBone]
+        -> Maybe ([ResultBone])
 animate anim frame =
   case frame <= anim ^. animLength of
     True  -> Just result
@@ -48,8 +48,11 @@ animate anim frame =
     (kf1, kf2) = head . filter betweenKeyframes
                       . zip allKeyframes
                       $ tail allKeyframes
-    tlKeys = zip (getTimelineKey <$> _mainlineKeyBoneRef kf1)
-                 (getTimelineKey <$> _mainlineKeyBoneRef kf2)
+    tlKeys = zip (getTimelineKey <$> bonerefs kf1)
+                 (getTimelineKey <$> bonerefs kf2)
+      where
+        bonerefs k = _mainlineKeyBoneRef k
+                  <> _mainlineKeyObjectRef k
 
     progress = normalize (fromIntegral $ _mainlineKeyTime kf1)
                          (fromIntegral $ _mainlineKeyTime kf2)
@@ -70,9 +73,9 @@ animate anim frame =
             Nothing -> rb
 
     lerpBones (tlk1, parent) (tlk2, _)
-      | Just b1 <- _timelineKeyBone tlk1
-      , Just b2 <- _timelineKeyBone tlk2
-      = let spin = maybe 1 fromIntegral $ _timelineKeySpin tlk1
+      = let b1 = _timelineKeyBone tlk1
+            b2 = _timelineKeyBone tlk2
+            spin = fromIntegral $ _timelineKeySpin tlk1
             overEach f g = f (toRealFloat $ g b1)
                              (toRealFloat $ g b2)
             lerping = overEach (lerp progress)
@@ -82,7 +85,8 @@ animate anim frame =
                        (lerping _timelineBoneX)
                        (lerping _timelineBoneY)
                        parent
-    lerpBones _ _ = error "bad lerpbones"
+                       (tlk1  ^. timelineKeyBone.timelineBoneObj)
+
 
     lerpAngle spin r1 r2 =
       lerp progress r1 (r1 + normalizeDeg r1 r2 * spin)
