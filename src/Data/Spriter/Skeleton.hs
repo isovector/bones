@@ -6,18 +6,21 @@
 module Data.Spriter.Skeleton where
 
 import Control.Lens
+import Data.List (sortBy)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
+import Data.Ord (comparing)
 import Data.Scientific (toRealFloat)
 import Data.Spriter.Types
 
 
 data ResultBone = ResultBone
-  { _rbAngle :: Double
-  , _rbX :: Double
-  , _rbY :: Double
+  { _rbAngle  :: Double
+  , _rbX      :: Double
+  , _rbY      :: Double
   , _rbParent :: Maybe Int
-  , _rbObj :: Maybe BoneObj
+  , _rbObj    :: Maybe BoneObj
+  , _rbZIndex :: Maybe Int
   } deriving (Eq, Show, Read)
 makeLenses ''ResultBone
 
@@ -25,20 +28,20 @@ isBone :: ResultBone -> Bool
 isBone = not . isJust . _rbObj
 
 instance Monoid ResultBone where
-  mempty  = ResultBone 0 0 0 Nothing Nothing
-  mappend (ResultBone a x y _ _) (ResultBone a' x' y' p o) =
+  mempty  = ResultBone 0 0 0 Nothing Nothing Nothing
+  mappend (ResultBone a x y _ _ _) (ResultBone a' x' y' p o z) =
     let s = sin a
         c = cos a
         x'' = (x' * c) - (y' * s)
         y'' = (x' * s) + (y' * c)
-     in ResultBone (a + a') (x + x'') (y + y'') p o
+     in ResultBone (a + a') (x + x'') (y + y'') p o z
 
 animate :: Animation
         -> Int  -- ^ Frame.
         -> Maybe ([ResultBone])
 animate anim frame =
   case frame <= anim ^. animLength of
-    True  -> Just result
+    True  -> Just $ sortBy (comparing _rbZIndex) result
     False -> Nothing
   where
     keyframes = anim ^. animMainline.mainlineKey
@@ -72,7 +75,7 @@ animate anim frame =
             Just i  -> result !! i <> rb
             Nothing -> rb
 
-    lerpBones (tlk1, parent) (tlk2, _)
+    lerpBones (tlk1, parent, zindex) (tlk2, _, _)
       = let b1 = _timelineKeyBone tlk1
             b2 = _timelineKeyBone tlk2
             spin = fromIntegral $ _timelineKeySpin tlk1
@@ -86,6 +89,7 @@ animate anim frame =
                        (lerping _timelineBoneY)
                        parent
                        (tlk1  ^. timelineKeyBone.timelineBoneObj)
+                       zindex
 
 
     lerpAngle spin r1 r2 =
@@ -101,9 +105,9 @@ animate anim frame =
              | a >= r    = fmod r $ a - r
              | otherwise = a
 
-    getTimelineKey :: BoneRef -> (TimelineKey, Maybe Int)
+    getTimelineKey :: BoneRef -> (TimelineKey, Maybe Int, Maybe Int)
     getTimelineKey br =
-      (, _boneRefParent br)
+      (, _boneRefParent br, _boneRefZIndex br)
         $  _timelineKey (_animTimeline anim !! _boneRefTimeline br)
         !! _boneRefKey br
 

@@ -122,8 +122,8 @@ data TimelineKey = TimelineKey
 instance FromJSON TimelineKey where
   parseJSON = withObject "TimelineKey" $ \obj -> do
     bone   <- obj .:? "bone"
-    object <- obj .:? "object"
-    tlbone <- maybe mzero return $ object <|> bone
+    o <- obj .:? "object"
+    tlbone <- maybe mzero return $ o <|> bone
 
     TimelineKey <$> obj .: "id"
                 <*> pure tlbone
