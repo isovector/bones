@@ -19,6 +19,13 @@ library
   exposed-modules:    Data.Spriter.Types, Data.Spriter.Skeleton
   -- other-modules:
   -- other-extensions:
-  build-depends:       base >=4.9 && <4.10, containers, aeson, scientific, aeson-casing, string-conv, lens
+  build-depends:       base >=4.9 && <4.10
+                     , containers
+                     , aeson
+                     , scientific
+                     , aeson-casing
+                     , string-conv
+                     , lens
+                     , vector
   hs-source-dirs:      src
   default-language:    Haskell2010

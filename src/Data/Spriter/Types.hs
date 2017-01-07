@@ -1,20 +1,43 @@
+{-# LANGUAGE DeriveAnyClass      #-}
 {-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 
 module Data.Spriter.Types where
 
-import Control.Applicative ((<|>))
-import Control.Lens.TH
-import Control.Monad (guard, mzero)
-import Data.Aeson
-import Data.Aeson.Casing
-import Data.Scientific
-import GHC.Generics
+import           Control.Applicative ((<|>))
+import           Control.Lens.TH
+import           Control.Monad (guard, mzero)
+import           Data.Aeson
+import           Data.Aeson.Casing
+import           Data.Map (Map)
+import qualified Data.Map as M
+import qualified Data.Vector as V
+import           Data.Scientific
+import           Data.String (IsString (..))
+import           GHC.Generics
+
+
+newtype EntityName = EntityName String
+  deriving (Eq, Show, Read, Generic, ToJSON, FromJSON, Ord)
+
+instance FromJSON (Map EntityName Entity) where
+  parseJSON = withArray "EntityMap" $ \arr -> do
+    entities <- sequence $ fmap parseJSON arr
+    return . M.fromList
+           . fmap ((,) =<< EntityName . _entityName)
+           $ V.toList entities
+
+instance ToJSON (Map EntityName Entity) where
+  toJSON = toJSON . fmap snd . M.toList
+
+instance IsString EntityName where
+  fromString = EntityName
 
 data Schema = Schema
-  { _schemaEntity :: [Entity]
+  { _schemaEntity :: Map EntityName Entity
   , _schemaFolder :: [Folder]
   } deriving (Eq, Show, Read, Generic)
 
@@ -23,8 +46,24 @@ instance ToJSON Schema where
 instance FromJSON Schema where
    parseJSON = genericParseJSON $ aesonDrop 7 snakeCase
 
+newtype AnimationName = AnimationName String
+  deriving (Eq, Show, Read, Generic, ToJSON, FromJSON, Ord)
+
+instance FromJSON (Map AnimationName Animation) where
+  parseJSON = withArray "AnimationMap" $ \arr -> do
+    anims <- sequence $ fmap parseJSON arr
+    return . M.fromList
+           . fmap ((,) =<< AnimationName . _animName)
+           $ V.toList anims
+
+instance ToJSON (Map AnimationName Animation) where
+  toJSON = toJSON . fmap snd . M.toList
+
+instance IsString AnimationName where
+  fromString = AnimationName
+
 data Entity = Entity
-  { _entityAnimation :: [Animation]
+  { _entityAnimation :: Map AnimationName Animation
   , _entityId        :: Int
   , _entityName      :: String
   , _entityObjInfo   :: [ObjInfo]
