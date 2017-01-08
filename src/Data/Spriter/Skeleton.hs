@@ -18,6 +18,8 @@ data ResultBone = ResultBone
   { _rbAngle  :: Double
   , _rbX      :: Double
   , _rbY      :: Double
+  , _rbScaleX :: Double
+  , _rbScaleY :: Double
   , _rbParent :: Maybe Int
   , _rbObj    :: Maybe BoneObj
   , _rbZIndex :: Maybe Int
@@ -28,13 +30,13 @@ isBone :: ResultBone -> Bool
 isBone = not . isJust . _rbObj
 
 instance Monoid ResultBone where
-  mempty  = ResultBone 0 0 0 Nothing Nothing Nothing
-  mappend (ResultBone a x y _ _ _) (ResultBone a' x' y' p o z) =
+  mempty  = ResultBone 0 0 0 1 1 Nothing Nothing Nothing
+  mappend (ResultBone a x y sx sy _ _ _) (ResultBone a' x' y' sx' sy' p o z) =
     let s = sin a
         c = cos a
         x'' = (x' * c) - (y' * s)
         y'' = (x' * s) + (y' * c)
-     in ResultBone (a + a') (x + x'') (y + y'') p o z
+     in ResultBone (a + a') (x + x'') (y + y'') (sx * sx') (sy * sy') p o z
 
 animate :: Animation
         -> Double  -- ^ Frame.
@@ -84,6 +86,8 @@ animate anim frame =
                                   _timelineBoneAngle)
                        (lerping _timelineBoneX)
                        (lerping _timelineBoneY)
+                       (lerping _timelineBoneScaleX)
+                       (lerping _timelineBoneScaleY)
                        parent
                        (tlk1  ^. timelineKeyBone.timelineBoneObj)
                        zindex
@@ -104,13 +108,11 @@ animate anim frame =
         $  _timelineKey (_animTimeline anim !! _boneRefTimeline br)
         !! _boneRefKey br
 
-fmod :: (Ord a, Num a)
+fmod :: (Fractional a, RealFrac a)
      => a  -- ^ Upper bound.
      -> a  -- ^ Value.
      -> a
-fmod r a | a < 0     = fmod r $ a + r
-         | a >= r    = fmod r $ a - r
-         | otherwise = a
+fmod r a = a - (fromIntegral (floor (a / r) :: Int) * r)
 
 normalize :: (Fractional a)
           => a  -- ^ Lower bound.

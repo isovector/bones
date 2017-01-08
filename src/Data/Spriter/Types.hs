@@ -173,10 +173,12 @@ instance ToJSON TimelineKey where
    toJSON = genericToJSON $ aesonDrop 12 snakeCase
 
 data TimelineBone = TimelineBone
-  { _timelineBoneAngle :: Scientific
-  , _timelineBoneX     :: Scientific
-  , _timelineBoneY     :: Scientific
-  , _timelineBoneObj   :: Maybe BoneObj
+  { _timelineBoneAngle  :: Scientific
+  , _timelineBoneX      :: Scientific
+  , _timelineBoneY      :: Scientific
+  , _timelineBoneScaleX :: Scientific
+  , _timelineBoneScaleY :: Scientific
+  , _timelineBoneObj    :: Maybe BoneObj
   } deriving (Eq, Show, Read, Generic)
 
 instance FromJSON TimelineBone where
@@ -184,6 +186,8 @@ instance FromJSON TimelineBone where
     TimelineBone <$> (maybe 0 id <$> obj .:? "angle")
                  <*> (maybe 0 id <$> obj .:? "x")
                  <*> (maybe 0 id <$> obj .:? "y")
+                 <*> (maybe 1 id <$> obj .:? "scale_x")
+                 <*> (maybe 1 id <$> obj .:? "scale_y")
                  <*> (return . hush $ fromJSON v)
 
 hush :: Result a -> Maybe a
