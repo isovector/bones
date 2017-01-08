@@ -37,7 +37,7 @@ instance Monoid ResultBone where
      in ResultBone (a + a') (x + x'') (y + y'') p o z
 
 animate :: Animation
-        -> Int  -- ^ Frame.
+        -> Double  -- ^ Frame.
         -> Maybe ([ResultBone])
 animate anim frame =
   case frame <= anim ^. animLength of
@@ -57,9 +57,9 @@ animate anim frame =
         bonerefs k = _mainlineKeyBoneRef k
                   <> _mainlineKeyObjectRef k
 
-    progress = normalize (fromIntegral $ _mainlineKeyTime kf1)
-                         (fromIntegral $ _mainlineKeyTime kf2)
-                         $ fromIntegral frame :: Double
+    progress = normalize (_mainlineKeyTime kf1)
+                         (_mainlineKeyTime kf2)
+                         $ frame
 
     betweenKeyframes (k1, k2) =
       let t1 = _mainlineKeyTime k1
@@ -70,10 +70,7 @@ animate anim frame =
 
     result = accumulate <$> fmap (uncurry lerpBones) tlKeys
       where
-        accumulate rb =
-          case _rbParent rb of
-            Just i  -> result !! i <> rb
-            Nothing -> rb
+        accumulate rb = maybe rb (\x -> result !! x <> rb) $ _rbParent rb
 
     lerpBones (tlk1, parent, zindex) (tlk2, _, _)
       = let b1 = _timelineKeyBone tlk1
@@ -101,16 +98,19 @@ animate anim frame =
             True  -> 360 - deg
             False -> deg
 
-    fmod r a | a < 0     = fmod r $ a + r
-             | a >= r    = fmod r $ a - r
-             | otherwise = a
-
     getTimelineKey :: BoneRef -> (TimelineKey, Maybe Int, Maybe Int)
     getTimelineKey br =
       (, _boneRefParent br, _boneRefZIndex br)
         $  _timelineKey (_animTimeline anim !! _boneRefTimeline br)
         !! _boneRefKey br
 
+fmod :: (Ord a, Num a)
+     => a  -- ^ Upper bound.
+     -> a  -- ^ Value.
+     -> a
+fmod r a | a < 0     = fmod r $ a + r
+         | a >= r    = fmod r $ a - r
+         | otherwise = a
 
 normalize :: (Fractional a)
           => a  -- ^ Lower bound.

@@ -77,7 +77,7 @@ instance FromJSON Entity where
 data Animation = Animation
   { _animId       :: Int
   , _animInterval :: Int
-  , _animLength   :: Int  -- ^ Number of frames.
+  , _animLength   :: Double  -- ^ Number of frames.
   , _animName     :: String
   , _animMainline :: Mainline
   , _animTimeline :: [Timeline]
@@ -101,7 +101,7 @@ data MainlineKey = MainlineKey
   { _mainlineKeyBoneRef   :: [BoneRef]
   , _mainlineKeyId        :: Int
   , _mainlineKeyObjectRef :: [BoneRef]
-  , _mainlineKeyTime      :: Int
+  , _mainlineKeyTime      :: Double
   } deriving (Eq, Show, Read, Generic)
 
 instance FromJSON MainlineKey where
@@ -155,7 +155,7 @@ data TimelineKey = TimelineKey
   { _timelineKeyId     :: Int
   , _timelineKeyBone   :: TimelineBone
   , _timelineKeySpin   :: Int
-  , _timelineKeyTime   :: Int
+  , _timelineKeyTime   :: Double
   } deriving (Eq, Show, Read, Generic)
 
 instance FromJSON TimelineKey where
