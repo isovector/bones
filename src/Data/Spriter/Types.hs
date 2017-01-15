@@ -208,6 +208,22 @@ instance FromJSON TimelineKey where
 instance ToJSON TimelineKey where
    toJSON = genericToJSON $ aesonDrop 12 snakeCase
 
+data ObjectType = SpriterObject
+                | SpriterBone
+                | SpriterPoint
+                deriving (Eq, Show, Read, Generic)
+
+instance ToJSON ObjectType where
+  toJSON SpriterObject = String "object"
+  toJSON SpriterBone   = String "bone"
+  toJSON SpriterPoint  = String "point"
+
+instance FromJSON ObjectType where
+  parseJSON (String "object") = pure SpriterObject
+  parseJSON (String "bone")   = pure SpriterBone
+  parseJSON (String "point")  = pure SpriterPoint
+  parseJSON _                 = mzero
+
 data TimelineBone = TimelineBone
   { _timelineBoneAngle  :: Scientific
   , _timelineBoneX      :: Scientific
@@ -215,6 +231,7 @@ data TimelineBone = TimelineBone
   , _timelineBoneScaleX :: Scientific
   , _timelineBoneScaleY :: Scientific
   , _timelineBoneObj    :: Maybe BoneObj
+  , _timelineObjType    :: ObjectType
   } deriving (Eq, Show, Read, Generic)
 
 instance FromJSON TimelineBone where
@@ -225,6 +242,7 @@ instance FromJSON TimelineBone where
                  <*> (maybe 1 id <$> obj .:? "scale_x")
                  <*> (maybe 1 id <$> obj .:? "scale_y")
                  <*> (return . hush $ fromJSON v)
+                 <*> (maybe SpriterBone id <$> obj .:? "object_type")
 
 hush :: Result a -> Maybe a
 hush (Error _)   = Nothing
