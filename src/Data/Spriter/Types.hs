@@ -20,6 +20,12 @@ import           Data.String (IsString (..))
 import           GHC.Generics
 
 
+newtype EventName = EventName String
+  deriving (Eq, Show, Read, Generic, ToJSON, FromJSON, Ord)
+
+instance IsString EventName where
+  fromString = EventName
+
 newtype EntityName = EntityName String
   deriving (Eq, Show, Read, Generic, ToJSON, FromJSON, Ord)
 
@@ -75,18 +81,48 @@ instance FromJSON Entity where
    parseJSON = genericParseJSON $ aesonDrop 7 snakeCase
 
 data Animation = Animation
-  { _animId       :: Int
-  , _animInterval :: Int
-  , _animLength   :: Double  -- ^ Number of frames.
-  , _animName     :: String
-  , _animMainline :: Mainline
-  , _animTimeline :: [Timeline]
+  { _animId        :: Int
+  , _animInterval  :: Int
+  , _animLength    :: Double  -- ^ Number of frames.
+  , _animName      :: String
+  , _animMainline  :: Mainline
+  , _animTimeline  :: [Timeline]
+  , _animEventline :: [Eventline]
   } deriving (Eq, Show, Read, Generic)
 
 instance ToJSON Animation where
    toJSON = genericToJSON $ aesonDrop 5 snakeCase
+
 instance FromJSON Animation where
-   parseJSON = genericParseJSON $ aesonDrop 5 snakeCase
+  parseJSON = withObject "Animation" $ \obj ->
+    Animation <$> obj .: "id"
+              <*> obj .: "interval"
+              <*> obj .: "length"
+              <*> obj .: "name"
+              <*> obj .: "mainline"
+              <*> obj .: "timeline"
+              <*> (maybe [] id <$> obj .:? "eventline")
+
+data Eventline = Eventline
+  { _eventlineId   :: Int
+  , _eventlineKey  :: [EventlineKey]
+  , _eventlineName :: EventName
+  } deriving (Eq, Show, Read, Generic)
+
+instance ToJSON Eventline where
+   toJSON = genericToJSON $ aesonDrop 10 snakeCase
+instance FromJSON Eventline where
+   parseJSON = genericParseJSON $ aesonDrop 10 snakeCase
+
+data EventlineKey = EventlineKey
+  { _eventlineKeyId     :: Int
+  , _eventlineKeyTime   :: Double
+  } deriving (Eq, Show, Read, Generic)
+
+instance ToJSON EventlineKey where
+   toJSON = genericToJSON $ aesonDrop 13 snakeCase
+instance FromJSON EventlineKey where
+   parseJSON = genericParseJSON $ aesonDrop 13 snakeCase
 
 data Mainline = Mainline
   { _mainlineKey :: [MainlineKey]
