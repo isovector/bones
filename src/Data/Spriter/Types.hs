@@ -295,8 +295,8 @@ instance FromJSON Folder where
 data File = File
   { _fileId     :: Int
   , _fileName   :: FilePath
-  , _filePivotX :: Int
-  , _filePivotY :: Int
+  , _filePivotX :: Double
+  , _filePivotY :: Double
   , _fileWidth  :: Int
   , _fileHeight :: Int
   } deriving (Eq, Show, Read, Generic)
