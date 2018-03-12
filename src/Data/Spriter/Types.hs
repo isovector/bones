@@ -29,14 +29,14 @@ instance IsString EventName where
 newtype EntityName = EntityName String
   deriving (Eq, Show, Read, Generic, ToJSON, FromJSON, Ord)
 
-instance FromJSON (Map EntityName Entity) where
+instance {-# OVERLAPPING #-} FromJSON (Map EntityName Entity) where
   parseJSON = withArray "EntityMap" $ \arr -> do
     entities <- sequence $ fmap parseJSON arr
     return . M.fromList
            . fmap ((,) =<< EntityName . _entityName)
            $ V.toList entities
 
-instance ToJSON (Map EntityName Entity) where
+instance {-# OVERLAPPING #-} ToJSON (Map EntityName Entity) where
   toJSON = toJSON . fmap snd . M.toList
 
 instance IsString EntityName where
@@ -47,22 +47,22 @@ data Schema = Schema
   , _schemaFolder :: [Folder]
   } deriving (Eq, Show, Read, Generic)
 
-instance ToJSON Schema where
+instance {-# OVERLAPPING #-} ToJSON Schema where
    toJSON = genericToJSON $ aesonDrop 7 snakeCase
-instance FromJSON Schema where
+instance {-# OVERLAPPING #-} FromJSON Schema where
    parseJSON = genericParseJSON $ aesonDrop 7 snakeCase
 
 newtype AnimationName = AnimationName String
   deriving (Eq, Show, Read, Generic, ToJSON, FromJSON, Ord)
 
-instance FromJSON (Map AnimationName Animation) where
+instance {-# OVERLAPPING #-} FromJSON (Map AnimationName Animation) where
   parseJSON = withArray "AnimationMap" $ \arr -> do
     anims <- sequence $ fmap parseJSON arr
     return . M.fromList
            . fmap ((,) =<< AnimationName . _animName)
            $ V.toList anims
 
-instance ToJSON (Map AnimationName Animation) where
+instance {-# OVERLAPPING #-} ToJSON (Map AnimationName Animation) where
   toJSON = toJSON . fmap snd . M.toList
 
 instance IsString AnimationName where
