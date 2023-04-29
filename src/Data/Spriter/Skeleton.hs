@@ -29,14 +29,16 @@ makeLenses ''ResultBone
 isBone :: ResultBone -> Bool
 isBone = not . isJust . _rbObj
 
-instance Monoid ResultBone where
-  mempty  = ResultBone 0 0 0 1 1 Nothing Nothing Nothing
-  mappend (ResultBone a x y sx sy _ _ _) (ResultBone a' x' y' sx' sy' p o z) =
+instance Semigroup ResultBone where
+  ResultBone a x y sx sy _ _ _ <> ResultBone a' x' y' sx' sy' p o z =
     let s = sin a
         c = cos a
         x'' = (x' * c) - (y' * s)
         y'' = (x' * s) + (y' * c)
      in ResultBone (a + a') (x + x'') (y + y'') (sx * sx') (sy * sy') p o z
+
+instance Monoid ResultBone where
+  mempty  = ResultBone 0 0 0 1 1 Nothing Nothing Nothing
 
 animate :: Animation
         -> Double  -- ^ Frame.
