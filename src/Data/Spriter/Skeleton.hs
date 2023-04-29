@@ -3,7 +3,12 @@
 {-# LANGUAGE TupleSections   #-}
 {-# LANGUAGE ViewPatterns    #-}
 
-module Data.Spriter.Skeleton where
+module Data.Spriter.Skeleton
+  ( loadSchema
+  , ResultBone (..)
+  , isBone
+  , animate
+  ) where
 
 import Control.Lens
 import Data.List (sortBy)
@@ -44,75 +49,95 @@ instance Semigroup ResultBone where
 instance Monoid ResultBone where
   mempty  = ResultBone 0 0 0 1 1 Nothing Nothing Nothing
 
-animate :: Animation
+animate :: Entity
+        -> AnimationName
         -> Double  -- ^ Frame.
         -> Maybe [ResultBone]
-animate anim frame =
+animate ent aname frame =
   case frame <= anim ^. animLength of
     True  -> Just $ sortBy (comparing _rbZIndex) result
     False -> Nothing
   where
-    keyframes = anim ^. animMainline.mainlineKey
+    anim :: Animation
+    Just anim = ent ^. entityAnimation . at aname
+
+    keyframes :: [MainlineKey]
+    keyframes = anim ^. animMainline . mainlineKey
+
+    allKeyframes :: [MainlineKey]
     allKeyframes = (head keyframes : keyframes)
                 ++ [head keyframes & mainlineKeyTime .~ _animLength anim]
 
-    (kf1, kf2) = head . filter betweenKeyframes
+    kf1, kf2 :: MainlineKey
+    (kf1, kf2) = head . filter (betweenKeyframes frame)
                       . zip allKeyframes
                       $ tail allKeyframes
-    tlKeys = zip (getTimelineKey <$> bonerefs kf1)
-                 (getTimelineKey <$> bonerefs kf2)
-      where
-        bonerefs k = _mainlineKeyBoneRef k
-                  <> _mainlineKeyObjectRef k
 
+    tlKeys :: [((TimelineKey, Maybe Int, Maybe Int), (TimelineKey, Maybe Int, Maybe Int))]
+    tlKeys = zip (getTimelineKey anim <$> bonerefs kf1)
+                 (getTimelineKey anim <$> bonerefs kf2)
+
+    progress :: Double
     progress = normalize (_mainlineKeyTime kf1)
                          (_mainlineKeyTime kf2)
                          $ frame
 
-    betweenKeyframes (k1, k2) =
-      let t1 = _mainlineKeyTime k1
-          t2 = _mainlineKeyTime k2
-       in (  t1 <= frame
-          && t2 >  frame
-          ) || ( t1 > t2 && t2 > frame )
-
-    result = accumulate <$> fmap (uncurry lerpBones) tlKeys
+    result :: [ResultBone]
+    result = accumulate <$> fmap (uncurry $ lerpBones progress) tlKeys
       where
         accumulate rb = maybe rb (\x -> result !! x <> rb) $ _rbParent rb
 
-    lerpBones (tlk1, parent, zindex) (tlk2, _, _)
-      = let b1 = _timelineKeyBone tlk1
-            b2 = _timelineKeyBone tlk2
-            spin = fromIntegral $ _timelineKeySpin tlk1
-            overEach f g = f (toRealFloat $ g b1)
-                             (toRealFloat $ g b2)
-            lerping = overEach (lerp progress)
-         in ResultBone ( degToRad
-                       $ overEach (lerpAngle spin)
-                                  _timelineBoneAngle)
-                       (lerping _timelineBoneX)
-                       (lerping _timelineBoneY)
-                       (lerping _timelineBoneScaleX)
-                       (lerping _timelineBoneScaleY)
-                       parent
-                       (tlk1  ^. timelineKeyBone.timelineBoneObj)
-                       zindex
+betweenKeyframes :: Double -> (MainlineKey, MainlineKey) -> Bool
+betweenKeyframes frame (k1, k2) =
+  let t1 = _mainlineKeyTime k1
+      t2 = _mainlineKeyTime k2
+    in (  t1 <= frame
+      && t2 >  frame
+      ) || ( t1 > t2 && t2 > frame )
 
+bonerefs :: MainlineKey -> [BoneRef]
+bonerefs k = _mainlineKeyBoneRef k
+          <> _mainlineKeyObjectRef k
 
-    lerpAngle spin r1 r2 =
-      lerp progress r1 (r1 + normalizeDeg r1 r2 * spin)
+getTimelineKey :: Animation -> BoneRef -> (TimelineKey, Maybe Int, Maybe Int)
+getTimelineKey anim br =
+  (, _boneRefParent br, _boneRefZIndex br)
+    $  _timelineKey (_animTimeline anim !! _boneRefTimeline br)
+    !! _boneRefKey br
 
-    normalizeDeg r1 r2 =
-      let deg = fmod 360 (max r1 r2 - min r1 r2)
-       in case deg > 180 of
-            True  -> 360 - deg
-            False -> deg
+lerpBones
+    :: Double
+    -> (TimelineKey, Maybe Int, Maybe Int)
+    -> (TimelineKey, Maybe Int, Maybe Int)
+    -> ResultBone
+lerpBones progress (tlk1, parent, zindex) (tlk2, _, _)
+  = let b1 = _timelineKeyBone tlk1
+        b2 = _timelineKeyBone tlk2
+        spin = fromIntegral $ _timelineKeySpin tlk1
+        overEach f g = f (toRealFloat $ g b1)
+                          (toRealFloat $ g b2)
+        lerping = overEach (lerp progress)
+      in ResultBone ( degToRad
+                    $ overEach (lerpAngle progress spin)
+                              _timelineBoneAngle)
+                    (lerping _timelineBoneX)
+                    (lerping _timelineBoneY)
+                    (lerping _timelineBoneScaleX)
+                    (lerping _timelineBoneScaleY)
+                    parent
+                    (tlk1  ^. timelineKeyBone.timelineBoneObj)
+                    zindex
 
-    getTimelineKey :: BoneRef -> (TimelineKey, Maybe Int, Maybe Int)
-    getTimelineKey br =
-      (, _boneRefParent br, _boneRefZIndex br)
-        $  _timelineKey (_animTimeline anim !! _boneRefTimeline br)
-        !! _boneRefKey br
+lerpAngle :: Double -> Double -> Double -> Double -> Double
+lerpAngle progress spin r1 r2 =
+  lerp progress r1 (r1 + normalizeDeg r1 r2 * spin)
+
+normalizeDeg :: Double -> Double -> Double
+normalizeDeg r1 r2 =
+  let deg = fmod 360 (max r1 r2 - min r1 r2)
+    in case deg > 180 of
+        True  -> 360 - deg
+        False -> deg
 
 fmod :: (Fractional a, RealFrac a)
      => a  -- ^ Upper bound.

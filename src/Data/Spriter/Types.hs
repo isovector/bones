@@ -68,6 +68,12 @@ instance {-# OVERLAPPING #-} ToJSON (Map AnimationName Animation) where
 instance IsString AnimationName where
   fromString = AnimationName
 
+-- ok so HOLD ON TO THE ENTITY
+-- it has animations
+-- but it also has the objinfos, which is what we need to pull out the hitbox sizes
+-- better, we can look them up by name thank christ
+-- let's entirely ignore tags and metadata
+
 data Entity = Entity
   { _entityAnimation :: Map AnimationName Animation
   , _entityId        :: Int
@@ -264,26 +270,28 @@ instance ToJSON BoneObj where
 instance FromJSON BoneObj where
    parseJSON = genericParseJSON $ aesonDrop 8 snakeCase
 
-data ObjInfo = Bone
+data ObjInfo = ObjInfo
   { _boneName   :: String
   , _boneWidth  :: Scientific
   , _boneHeight :: Scientific
+  , _boneType   :: ObjectType
   } deriving (Eq, Show, Read, Generic)
 
 instance ToJSON ObjInfo where
   toJSON o = object [ "name" .= _boneName o
                     , "w" .= _boneWidth o
                     , "h" .= _boneHeight o
-                    , "type" .= ("bone" :: String)
+                    , "type" .= _boneType o
                     ]
 
 instance FromJSON ObjInfo where
   parseJSON = withObject "ObjInfo" $ \obj -> do
     t :: String <- obj .: "type"
     guard $ t == "bone"
-    Bone <$> obj .: "name"
-         <*> obj .: "w"
-         <*> obj .: "h"
+    ObjInfo <$> obj .: "name"
+            <*> obj .: "w"
+            <*> obj .: "h"
+            <*> obj .: "type"
 
 data Folder = Folder
   { _folderId   :: Int
