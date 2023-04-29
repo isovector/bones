@@ -46,7 +46,7 @@ instance Monoid ResultBone where
 
 animate :: Animation
         -> Double  -- ^ Frame.
-        -> Maybe ([ResultBone])
+        -> Maybe [ResultBone]
 animate anim frame =
   case frame <= anim ^. animLength of
     True  -> Just $ sortBy (comparing _rbZIndex) result

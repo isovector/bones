@@ -211,17 +211,20 @@ instance ToJSON TimelineKey where
 data ObjectType = SpriterObject
                 | SpriterBone
                 | SpriterPoint
+                | SpriterBox
                 deriving (Eq, Show, Read, Generic)
 
 instance ToJSON ObjectType where
   toJSON SpriterObject = String "object"
   toJSON SpriterBone   = String "bone"
   toJSON SpriterPoint  = String "point"
+  toJSON SpriterBox    = String "box"
 
 instance FromJSON ObjectType where
   parseJSON (String "object") = pure SpriterObject
   parseJSON (String "bone")   = pure SpriterBone
   parseJSON (String "point")  = pure SpriterPoint
+  parseJSON (String "box")    = pure SpriterBox
   parseJSON _                 = mzero
 
 data TimelineBone = TimelineBone
