@@ -12,6 +12,10 @@ import Data.Monoid ((<>))
 import Data.Ord (comparing)
 import Data.Scientific (toRealFloat)
 import Data.Spriter.Types
+import Data.Aeson (eitherDecodeFileStrict)
+
+loadSchema :: FilePath -> IO (Either String Schema)
+loadSchema = eitherDecodeFileStrict
 
 
 data ResultBone = ResultBone
