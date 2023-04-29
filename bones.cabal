@@ -22,10 +22,12 @@ library
   build-depends:       base >=4.9 && <5
                      , containers
                      , aeson
-                     , scientific
                      , aeson-casing
                      , string-conv
                      , lens
+                     , text
                      , vector
+                     , these
+                     , semialign
   hs-source-dirs:      src
   default-language:    Haskell2010

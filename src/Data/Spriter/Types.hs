@@ -14,19 +14,20 @@ import           Data.Aeson
 import           Data.Aeson.Casing
 import           Data.Map (Map)
 import qualified Data.Map as M
-import qualified Data.Vector as V
-import           Data.Scientific
 import           Data.String (IsString (..))
+import           Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Vector as V
 import           GHC.Generics
 
 
-newtype EventName = EventName String
+newtype EventName = EventName Text
   deriving (Eq, Show, Read, Generic, ToJSON, FromJSON, Ord)
 
 instance IsString EventName where
-  fromString = EventName
+  fromString = EventName . T.pack
 
-newtype EntityName = EntityName String
+newtype EntityName = EntityName Text
   deriving (Eq, Show, Read, Generic, ToJSON, FromJSON, Ord)
 
 instance {-# OVERLAPPING #-} FromJSON (Map EntityName Entity) where
@@ -40,7 +41,7 @@ instance {-# OVERLAPPING #-} ToJSON (Map EntityName Entity) where
   toJSON = toJSON . fmap snd . M.toList
 
 instance IsString EntityName where
-  fromString = EntityName
+  fromString = EntityName . T.pack
 
 data Schema = Schema
   { _schemaEntity :: Map EntityName Entity
@@ -52,7 +53,7 @@ instance {-# OVERLAPPING #-} ToJSON Schema where
 instance {-# OVERLAPPING #-} FromJSON Schema where
    parseJSON = genericParseJSON $ aesonDrop 7 snakeCase
 
-newtype AnimationName = AnimationName String
+newtype AnimationName = AnimationName Text
   deriving (Eq, Show, Read, Generic, ToJSON, FromJSON, Ord)
 
 instance {-# OVERLAPPING #-} FromJSON (Map AnimationName Animation) where
@@ -66,7 +67,7 @@ instance {-# OVERLAPPING #-} ToJSON (Map AnimationName Animation) where
   toJSON = toJSON . fmap snd . M.toList
 
 instance IsString AnimationName where
-  fromString = AnimationName
+  fromString = AnimationName . T.pack
 
 -- ok so HOLD ON TO THE ENTITY
 -- it has animations
@@ -77,7 +78,7 @@ instance IsString AnimationName where
 data Entity = Entity
   { _entityAnimation :: Map AnimationName Animation
   , _entityId        :: Int
-  , _entityName      :: String
+  , _entityName      :: Text
   , _entityObjInfo   :: [ObjInfo]
   } deriving (Eq, Show, Read, Generic)
 
@@ -90,7 +91,7 @@ data Animation = Animation
   { _animId        :: Int
   , _animInterval  :: Int
   , _animLength    :: Double  -- ^ Number of frames.
-  , _animName      :: String
+  , _animName      :: Text
   , _animMainline  :: Mainline
   , _animTimeline  :: [Timeline]
   , _animEventline :: [Eventline]
@@ -185,7 +186,7 @@ instance ToJSON BoneRef where
 data Timeline = Timeline
   { _timelineId   :: Int
   , _timelineKey  :: [TimelineKey]
-  , _timelineName :: String
+  , _timelineName :: Text
   } deriving (Eq, Show, Read, Generic)
 
 instance ToJSON Timeline where
@@ -234,11 +235,11 @@ instance FromJSON ObjectType where
   parseJSON _                 = mzero
 
 data TimelineBone = TimelineBone
-  { _timelineBoneAngle  :: Scientific
-  , _timelineBoneX      :: Scientific
-  , _timelineBoneY      :: Scientific
-  , _timelineBoneScaleX :: Scientific
-  , _timelineBoneScaleY :: Scientific
+  { _timelineBoneAngle  :: Double
+  , _timelineBoneX      :: Double
+  , _timelineBoneY      :: Double
+  , _timelineBoneScaleX :: Double
+  , _timelineBoneScaleY :: Double
   , _timelineBoneObj    :: Maybe BoneObj
   , _timelineObjType    :: ObjectType
   } deriving (Eq, Show, Read, Generic)
@@ -271,23 +272,22 @@ instance FromJSON BoneObj where
    parseJSON = genericParseJSON $ aesonDrop 8 snakeCase
 
 data ObjInfo = ObjInfo
-  { _boneName   :: String
-  , _boneWidth  :: Scientific
-  , _boneHeight :: Scientific
-  , _boneType   :: ObjectType
+  { _objInfoName   :: Text
+  , _objInfoWidth  :: Double
+  , _objInfoHeight :: Double
+  , _objInfoType   :: ObjectType
   } deriving (Eq, Show, Read, Generic)
 
 instance ToJSON ObjInfo where
-  toJSON o = object [ "name" .= _boneName o
-                    , "w" .= _boneWidth o
-                    , "h" .= _boneHeight o
-                    , "type" .= _boneType o
+  toJSON o = object [ "name" .= _objInfoName o
+                    , "w"    .= _objInfoWidth o
+                    , "h"    .= _objInfoHeight o
+                    , "type" .= _objInfoType o
                     ]
 
 instance FromJSON ObjInfo where
   parseJSON = withObject "ObjInfo" $ \obj -> do
-    t :: String <- obj .: "type"
-    guard $ t == "bone"
+    t :: Text <- obj .: "type"
     ObjInfo <$> obj .: "name"
             <*> obj .: "w"
             <*> obj .: "h"

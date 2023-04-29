@@ -1,5 +1,4 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections   #-}
 {-# LANGUAGE ViewPatterns    #-}
 
@@ -8,46 +7,54 @@ module Data.Spriter.Skeleton
   , ResultBone (..)
   , isBone
   , animate
+  , fmod
   ) where
 
-import Control.Lens
-import Data.List (sortBy)
-import Data.Maybe (isJust)
-import Data.Monoid ((<>))
-import Data.Ord (comparing)
-import Data.Scientific (toRealFloat)
-import Data.Spriter.Types
-import Data.Aeson (eitherDecodeFileStrict)
+import           Control.Applicative ((<|>))
+import           Control.Lens
+import           Data.Aeson (eitherDecodeFileStrict)
+import           Data.List (sortBy)
+import           Data.Map (Map)
+import qualified Data.Map as M
+import           Data.Maybe (isJust)
+import           Data.Monoid ((<>))
+import           Data.Ord (comparing)
+import           Data.Spriter.Types
+import           Data.Text (Text)
+import qualified Data.Text as T
+import           GHC.Generics
+import Data.Align (align)
+import Data.These
 
 loadSchema :: FilePath -> IO (Either String Schema)
 loadSchema = eitherDecodeFileStrict
 
 
 data ResultBone = ResultBone
-  { _rbAngle  :: Double
-  , _rbX      :: Double
-  , _rbY      :: Double
-  , _rbScaleX :: Double
-  , _rbScaleY :: Double
-  , _rbParent :: Maybe Int
-  , _rbObj    :: Maybe BoneObj
-  , _rbZIndex :: Maybe Int
+  { _rbAngle   :: Double
+  , _rbX       :: Double
+  , _rbY       :: Double
+  , _rbScaleX  :: Double
+  , _rbScaleY  :: Double
+  , _rbParent  :: Maybe Int
+  , _rbObj     :: Maybe BoneObj
+  , _rbObjInfo :: Maybe ObjInfo
+  , _rbZIndex  :: Maybe Int
   } deriving (Eq, Show, Read)
-makeLenses ''ResultBone
 
 isBone :: ResultBone -> Bool
 isBone = not . isJust . _rbObj
 
 instance Semigroup ResultBone where
-  ResultBone a x y sx sy _ _ _ <> ResultBone a' x' y' sx' sy' p o z =
+  ResultBone a x y sx sy _ _ _ _ <> ResultBone a' x' y' sx' sy' p o' oi' z' =
     let s = sin a
         c = cos a
         x'' = (x' * c) - (y' * s)
         y'' = (x' * s) + (y' * c)
-     in ResultBone (a + a') (x + x'') (y + y'') (sx * sx') (sy * sy') p o z
+     in ResultBone (a + a') (x + x'') (y + y'') (sx * sx') (sy * sy') p (o') (oi') (z')
 
 instance Monoid ResultBone where
-  mempty  = ResultBone 0 0 0 1 1 Nothing Nothing Nothing
+  mempty  = ResultBone 0 0 0 1 1 Nothing Nothing Nothing Nothing
 
 animate :: Entity
         -> AnimationName
@@ -73,9 +80,14 @@ animate ent aname frame =
                       . zip allKeyframes
                       $ tail allKeyframes
 
-    tlKeys :: [((TimelineKey, Maybe Int, Maybe Int), (TimelineKey, Maybe Int, Maybe Int))]
-    tlKeys = zip (getTimelineKey anim <$> bonerefs kf1)
-                 (getTimelineKey anim <$> bonerefs kf2)
+    objs :: Map Text ObjInfo
+    objs = M.fromList $ do
+      oi <- _entityObjInfo ent
+      pure (_objInfoName oi, oi)
+
+    tlKeys :: [These TimelineKeyStuff TimelineKeyStuff]
+    tlKeys = align (getTimelineKey objs anim <$> bonerefs kf1)
+                   (getTimelineKey objs anim <$> bonerefs kf2)
 
     progress :: Double
     progress = normalize (_mainlineKeyTime kf1)
@@ -83,7 +95,7 @@ animate ent aname frame =
                          $ frame
 
     result :: [ResultBone]
-    result = accumulate <$> fmap (uncurry $ lerpBones progress) tlKeys
+    result = accumulate <$> fmap (lerpBones progress) tlKeys
       where
         accumulate rb = maybe rb (\x -> result !! x <> rb) $ _rbParent rb
 
@@ -99,23 +111,32 @@ bonerefs :: MainlineKey -> [BoneRef]
 bonerefs k = _mainlineKeyBoneRef k
           <> _mainlineKeyObjectRef k
 
-getTimelineKey :: Animation -> BoneRef -> (TimelineKey, Maybe Int, Maybe Int)
-getTimelineKey anim br =
-  (, _boneRefParent br, _boneRefZIndex br)
-    $  _timelineKey (_animTimeline anim !! _boneRefTimeline br)
-    !! _boneRefKey br
+data TimelineKeyStuff = TimelineKeyStuff
+  { tks_timelinekey    :: TimelineKey
+  , tks_parent_boneref :: Maybe Int
+  , tks_zindex         :: Maybe Int
+  , tks_object         :: Maybe ObjInfo
+  }
+
+getTimelineKey :: Map Text ObjInfo -> Animation -> BoneRef -> TimelineKeyStuff
+getTimelineKey objs anim br =
+  let timeline = _animTimeline anim !! _boneRefTimeline br
+   in TimelineKeyStuff
+        (_timelineKey timeline !! _boneRefKey br)
+        (_boneRefParent br)
+        (_boneRefZIndex br)
+        (M.lookup (_timelineName timeline) objs)
 
 lerpBones
     :: Double
-    -> (TimelineKey, Maybe Int, Maybe Int)
-    -> (TimelineKey, Maybe Int, Maybe Int)
+    -> These TimelineKeyStuff TimelineKeyStuff
     -> ResultBone
-lerpBones progress (tlk1, parent, zindex) (tlk2, _, _)
+lerpBones progress (These tks1@(TimelineKeyStuff tlk1 _ _ _) tks2)
   = let b1 = _timelineKeyBone tlk1
-        b2 = _timelineKeyBone tlk2
+        b2 = _timelineKeyBone $ tks_timelinekey tks2
         spin = fromIntegral $ _timelineKeySpin tlk1
-        overEach f g = f (toRealFloat $ g b1)
-                          (toRealFloat $ g b2)
+        overEach f g = f (g b1)
+                         (g b2)
         lerping = overEach (lerp progress)
       in ResultBone ( degToRad
                     $ overEach (lerpAngle progress spin)
@@ -124,13 +145,18 @@ lerpBones progress (tlk1, parent, zindex) (tlk2, _, _)
                     (lerping _timelineBoneY)
                     (lerping _timelineBoneScaleX)
                     (lerping _timelineBoneScaleY)
-                    parent
+                    (tks_parent_boneref tks1)
                     (tlk1  ^. timelineKeyBone.timelineBoneObj)
-                    zindex
+                    (tks_object tks1)
+                    (tks_zindex tks1)
+lerpBones progress (This tks1) = lerpBones progress (These tks1 tks1)
+lerpBones progress (That tks1) = mempty
+
 
 lerpAngle :: Double -> Double -> Double -> Double -> Double
 lerpAngle progress spin r1 r2 =
   lerp progress r1 (r1 + normalizeDeg r1 r2 * spin)
+
 
 normalizeDeg :: Double -> Double -> Double
 normalizeDeg r1 r2 =
